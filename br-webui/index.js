@@ -49,12 +49,16 @@ app.all("/service/network*", function(req, res) {
 // rewrite requests to /api/mavlink to http://localhost:4777/mavlink
 // TODO: this should eventually be done by nginx (which we don't even have)
 apiProxy.on('proxyReq', function(proxyReq, req, res, options){
-	const rewritedPath = req.url.replace('/api/mavlink','/mavlink');
+	const rewritedPath = req.url.replace('/api/mavlink','/mavlink').replace('/api/waterlinked-dvl','');
 	proxyReq.path = rewritedPath;
  });
 
 app.all("/api/mavlink*", function(req, res) {
     apiProxy.web(req, res, {target: "http://localhost:4777"});
+});
+
+app.all("/api/waterlinked-dvl*", function(req, res) {
+    apiProxy.web(req, res, {target: "http://localhost:9001"});
 });
 
 var fs = require("fs");
@@ -1369,6 +1373,15 @@ io.on('connection', function(socket) {
 			}
 			child_process.exec('screen -dm -S wldriver ' + _companion_directory + '/tools/underwater-gps.py' + args, function(error, stdout, stderr) {
 				logger.log('Start waterlinked driver:', error, stdout, stderr);
+			});
+		});
+	});
+	
+	socket.on('restart DVL driver', function(data) {
+		var cmd = child_process.exec('screen -X -S dvl-service quit', function(error, stdout, stderr) {
+			logger.log('Stop dvl driver:', error, stdout, stderr);
+			child_process.exec('screen -dm -S dvl-service ' + _companion_directory + '/services/waterlinked/dvl-a50/main.py', function(error, stdout, stderr) {
+				logger.log('Start dvl driver:', error, stdout, stderr);
 			});
 		});
 	});

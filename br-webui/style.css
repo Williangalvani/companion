@@ -108,3 +108,12 @@ input:checked + .slidernew:before {
   margin-top: 0;
   margin-bottom: 0;
 }
+
+/* Rotating spinner  */
+@keyframes spinner {
+  to {transform: rotate(360deg);}
+}
+
+.spinner {
+  animation: spinner .6s linear infinite;
+}
