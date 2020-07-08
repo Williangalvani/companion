@@ -291,7 +291,9 @@ class DvlDriver (threading.Thread):
                 dy = dt*vy
                 dz = dt*vz
                 confidence = 100 if valid else 0
-                angles = self.update_attitude()
+                # feeding back the angles seem to aggravate the gyro drift issue
+                # angles = self.update_attitude()
+                angles = [0, 0, 0]
             except Exception as error:
                 print("Error fetching data for DVL:", error)
                 continue
