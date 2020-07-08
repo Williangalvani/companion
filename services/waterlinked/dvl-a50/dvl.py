@@ -204,6 +204,18 @@ class DvlDriver (threading.Thread):
         self.status = "Setting up MAVLink streams..."
         self.mav.ensure_message_frequency('ATTITUDE', 30, 5)
 
+    def setup_params(self):
+        """
+        Sets up the required params for DVL integration
+        """
+        self.mav.set_param("AHRS_EKF_TYPE", "MAV_PARAM_TYPE_UINT8", 3)
+        # TODO: Check if really required. It doesn't look like the ekf2 stops at all
+        self.mav.set_param("EK2_ENABLE", "MAV_PARAM_TYPE_UINT8", 0)
+
+        self.mav.set_param("EK3_ENABLE", "MAV_PARAM_TYPE_UINT8", 1)
+        self.mav.set_param("VISO__TYPE", "MAV_PARAM_TYPE_UINT8", 1)
+        self.mav.set_param("EK3_GPS_TYPE", "MAV_PARAM_TYPE_UINT8", 3)
+
     def setup_connections(self):
         """
         Sets up the socket to talk to the DVL
@@ -240,6 +252,7 @@ class DvlDriver (threading.Thread):
         self.setup_connections()
         self.wait_for_vehicle()
         self.setup_mavlink()
+        self.setup_params()
         time.sleep(1)
         self.set_gps_origin(*self.origin)
         self.status = "Running"
