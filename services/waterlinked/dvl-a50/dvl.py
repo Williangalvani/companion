@@ -296,12 +296,18 @@ class DvlDriver (threading.Thread):
             # TODO: test if this is used by ArduSub or could be [0, 0, 0]
             # extract velocity data from the DVL JSON
             try:
-                vx, vy, vz, alt, valid = data["vx"], data["vy"], data["vz"], data["altitude"], data["velocity_valid"]
+                vx, vy, vz, alt, valid, fom = data["vx"], data["vy"], data["vz"], data["altitude"], data["velocity_valid"], data["fom"]
                 dt = data["time"] / 1000
                 dx = dt*vx
                 dy = dt*vy
                 dz = dt*vz
-                confidence = 100 if valid else 0
+
+                # fom is the standard deviation. scaling it to a confidence from 0-100%
+                # 0 is a very good measurement, 0.4 is considered a inaccurate measurement
+                _fom_max = 0.4
+                confidence = 100 * (1-min(_fom_max, fom)/_fom_max) if valid else 0
+                # confidence = 100 if valid else 0
+
                 # feeding back the angles seem to aggravate the gyro drift issue
                 # angles = self.update_attitude()
                 angles = [0, 0, 0]
