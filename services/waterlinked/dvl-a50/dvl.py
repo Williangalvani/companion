@@ -257,19 +257,30 @@ class DvlDriver (threading.Thread):
         self.set_gps_origin(*self.origin)
         self.status = "Running"
         self.last_recv_time = time.time()
+        buf = ""
         while True:
             if not self.enabled:
                 time.sleep(1)
+                buf = ""  # Reset buf when disabled
                 continue
             r, _, _ = select([self.socket], [], [], 0)
             data = None
             if r:
                 try:
-                    data = json.loads(self.socket.recv(4096).decode())
+                    recv = self.socket.recv(1024).decode()
                     self.last_recv_time = time.time()
+                    buf += recv
                 except Exception as e:
                     print("Error receiveing:", e)
                     pass
+
+            # Extract 1 complete line from the buffer if available
+            if len(buf) > 0:
+                lines = buf.split("\n", 1)
+                if len(lines) > 1:
+                    buf = lines[1]
+                    data = json.loads(lines[0])
+
             if not data:
                 if time.time() - self.last_recv_time > self.timeout:
                     print("timeout detected")
