@@ -190,7 +190,7 @@ class DvlDriver (threading.Thread):
             self.hostname = hostname
             self.socket.shutdown()
             self.socket.close()
-            self.setup_connection()
+            self.setup_connections()
             self.save_settings()
             return True
         except:
