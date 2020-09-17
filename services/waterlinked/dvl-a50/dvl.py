@@ -11,7 +11,7 @@ from select import select
 import math
 import os
 
-HOSTNAME = "192.168.2.11"
+HOSTNAME = "192.168.2.95"
 DVL_DOWN = 1
 DVL_FORWARD = 2
 
