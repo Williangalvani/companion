@@ -118,7 +118,7 @@ class DvlDriver (threading.Thread):
                 continue
             # got the right Ip
             self.version = request(
-                "http://{0}/api/v1/about".format(self.hostname))
+                "http://{0}/api/v1/about".format(ip))
 
             time.sleep(1)
         self.hostname = ip
