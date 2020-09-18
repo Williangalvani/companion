@@ -11,7 +11,7 @@ from select import select
 import math
 import os
 
-HOSTNAME = "192.168.2.95"
+HOSTNAME = "waterlinked-dvl.local"
 DVL_DOWN = 1
 DVL_FORWARD = 2
 
@@ -52,6 +52,7 @@ class DvlDriver (threading.Thread):
                 self.hostname = data["hostname"]
                 self.origin = data["origin"]
                 self.rangefinder = data["rangefinder"]
+                print("Loaded settings: ", data)
         except FileNotFoundError:
             print("Settings file not found, using default.")
         except ValueError:
@@ -96,6 +97,15 @@ class DvlDriver (threading.Thread):
             "rangefinder": self.rangefinder
         }
 
+    @property
+    def host(self):
+        """ Make sure there is no port in the hostname allows local testing by where http can be running on other ports than 80"""
+        try:
+            host = self.hostname.split(":")[0]
+        except IndexError:
+            host = self.hostname
+        return host
+
     def look_for_dvl(self):
         """
         Waits for the dvl to show up at the designated hostname
@@ -109,7 +119,12 @@ class DvlDriver (threading.Thread):
                 continue
 
             # Try to find the ddns entry
-            ip = socket.gethostbyname('waterlinked-dvl.local')
+            try:
+                ip = socket.gethostbyname(self.hostname)
+            except socket.gaierror:
+                # Name or service not known, is it an ip address?
+                ip = self.hostname
+
             self.status = "Looking for Waterlinked DVL A-50... ({0})".format(ip)
 
             if '192.168.194.95' in ip:
@@ -184,16 +199,18 @@ class DvlDriver (threading.Thread):
     def set_hostname(self, hostname: str) -> bool:
         """
         Sets the hostname where the driver looks for the DVL
-        (tipically waterlinked-dvl.local)
+        (typically waterlinked-dvl.local)
         """
         try:
             self.hostname = hostname
-            self.socket.shutdown()
-            self.socket.close()
-            self.setup_connections()
+            if self.socket:  # Don't crash if the socket hasn't been configured yet
+                self.socket.shutdown(socket.SHUT_RDWR)
+                self.socket.close()
+            self.setup_connections(timeout=1)
             self.save_settings()
             return True
-        except:
+        except Exception as e:
+            print("Failed set hostname: '{}'".format(e))
             return False
 
     def setup_mavlink(self):
@@ -216,13 +233,35 @@ class DvlDriver (threading.Thread):
         self.mav.set_param("VISO__TYPE", "MAV_PARAM_TYPE_UINT8", 1)
         self.mav.set_param("EK3_GPS_TYPE", "MAV_PARAM_TYPE_UINT8", 3)
 
-    def setup_connections(self):
+    def setup_connections(self, timeout=300):
         """
         Sets up the socket to talk to the DVL
         """
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect((self.hostname, self.port))
-        self.socket.setblocking(0)
+        while timeout > 0:
+            try:
+                self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.socket.connect((self.host, self.port))
+                self.socket.setblocking(0)
+                return True
+            except socket.error:
+                time.sleep(0.1)
+            timeout -= 1
+        self.status = "Setup connection timeout"
+        return False
+
+    def reconnect(self):
+        if self.socket:
+            try:
+                self.socket.shutdown(socket.SHUT_RDWR)
+                self.socket.close()
+            except:
+                pass
+        success = self.setup_connections()
+        if success:
+            self.last_recv_time = time.time()  # Don't disconnect directly after connect
+            return True
+
+        return False
 
     def update_attitude(self) -> list:
         """
@@ -258,6 +297,7 @@ class DvlDriver (threading.Thread):
         self.status = "Running"
         self.last_recv_time = time.time()
         buf = ""
+        connected = True
         while True:
             if not self.enabled:
                 time.sleep(1)
@@ -268,8 +308,13 @@ class DvlDriver (threading.Thread):
             if r:
                 try:
                     recv = self.socket.recv(1024).decode()
-                    self.last_recv_time = time.time()
-                    buf += recv
+                    connected = True
+                    if recv:
+                        self.last_recv_time = time.time()
+                        buf += recv
+                except socket.error as e:
+                    print("Disconnected")
+                    connected = False
                 except Exception as e:
                     print("Error receiveing:", e)
                     pass
@@ -281,13 +326,18 @@ class DvlDriver (threading.Thread):
                     buf = lines[1]
                     data = json.loads(lines[0])
 
+            if not connected:
+                buf = ""
+                self.status = "restarting"
+                dis = self.reconnect()
+                time.sleep(0.003)
+                continue
+
             if not data:
                 if time.time() - self.last_recv_time > self.timeout:
-                    print("timeout detected")
-                    self.status = "restarting"
-                    self.socket.shutdown(socket.SHUT_RDWR)
-                    self.socket.close()
-                    self.setup_connections()
+                    buf = ""
+                    self.status = "timeout, restarting"
+                    connected = self.reconnect()
                 time.sleep(0.003)
                 continue
 
