@@ -30,7 +30,7 @@ sudo -H -u pi screen -dm -S ardusub-socat \
 
 echo "Start ardusub linux."
 sudo -H -u pi screen -dm -S ardusub-linux \
-    sudo $ARDUSUB_FOLDER/ardusub \
+    sudo PCA_CORRECTION=1.01 $ARDUSUB_FOLDER/ardusub \
     -A /dev/navigator \
     --log-directory $ARDUSUB_FOLDER/logs/ \
     --storage-directory $ARDUSUB_FOLDER/storage/
