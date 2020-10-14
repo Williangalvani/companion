@@ -140,11 +140,11 @@ try {
 	logger.error("error loading camera profiles from file", err);
 }
 
+const cameraSettingsPath = home_dir + "/camera-settings"
 // Load the last known camera settings
 try {
 	//This holds all of the last used/known settings from previous run
 	var old_cameras = []
-	const cameraSettingsPath = home_dir + "/camera-settings"
 	logger.log("loading camera settings from file " + cameraSettingsPath);
 	var cameraSettingsData = readConfigFile(cameraSettingsPath, "/dev/null");
 	if (cameraSettingsData.length > 0) {
@@ -561,11 +561,11 @@ io.on('connection', function(socket) {
 					
 					
 					// Save current settings for reload on next boot					
-					fs.writeFile(camera_settings_path, JSON.stringify(_cameras, null, 2), function(err) {
+					fs.writeFile(cameraSettingsPath, JSON.stringify(_cameras, null, 2), function(err) {
 						if(err) {
 							logger.log(err);
 						}
-						logger.log("The file was saved!", camera_settings_path);
+						logger.log("The file was saved!", cameraSettingsPath);
 					});
 				} catch (err) {
 					logger.log("error setting control", err);
@@ -677,11 +677,11 @@ io.on('connection', function(socket) {
 			});
 			
 			// Save current settings
-			fs.writeFile(camera_settings_path, JSON.stringify(_cameras, null, 2), function(err) {
+			fs.writeFile(cameraSettingsPath, JSON.stringify(_cameras, null, 2), function(err) {
 				if(err) {
 					logger.log(err);
 				}
-				logger.log("The file was saved!", camera_settings_path);
+				logger.log("The file was saved!", cameraSettingsPath);
 			});
 		} catch (err) {
 			logger.log("error resetting v4l2 defaults", err);
@@ -793,11 +793,11 @@ io.on('connection', function(socket) {
 					});
 					
 					// Save current settings
-					fs.writeFile(camera_settings_path, JSON.stringify(_cameras, null, 2), function(err) {
+					fs.writeFile(cameraSettingsPath, JSON.stringify(_cameras, null, 2), function(err) {
 						if(err) {
 							logger.log(err);
 						}
-						logger.log("The file was saved!", camera_settings_path);
+						logger.log("The file was saved!", cameraSettingsPath);
 					});
 				} catch (err) {
 					logger.log("Error setting v4l2 controls:", err);
@@ -885,11 +885,11 @@ io.on('connection', function(socket) {
 			});
 			
 			// Save current settings
-			fs.writeFile(camera_settings_path, JSON.stringify(_cameras, null, 2), function(err) {
+			fs.writeFile(cameraSettingsPath, JSON.stringify(_cameras, null, 2), function(err) {
 				if(err) {
 					logger.log(err);
 				}
-				logger.log("The file was saved!", camera_settings_path);
+				logger.log("The file was saved!", cameraSettingsPath);
 			});
 			
 		} catch(err) {
