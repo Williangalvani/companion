@@ -1356,7 +1356,7 @@ io.on('connection', function(socket) {
 			// Use spawn instead of exec to get callbacks for each line of stderr, stdout
 			var cmd = child_process.spawn(_companion_directory + '/tools/flash_px4.py', ['--latest']);
 		} else if (data.option == 'beta') {
-			var cmd = child_process.spawn(_companion_directory + '/tools/flash_px4.py', ['--url', 'http://firmware.ardupilot.org/Sub/beta/fmuv2/ardusub.apj']);
+			var cmd = child_process.spawn(_companion_directory + '/tools/flash_px4.py', ['--url', 'http://firmware.ardupilot.org/Sub/beta/Pixhawk1/ardusub.apj']);
 		} else if (data.option == 'file') {
 			var cmd = child_process.spawn(_companion_directory + '/tools/flash_px4.py', ['--file', '/tmp/data/' + data.file]);
 		} else {
