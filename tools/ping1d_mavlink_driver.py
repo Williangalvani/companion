@@ -38,12 +38,41 @@ PARSER.add_argument('--min-confidence',
                     )
 ARGS = PARSER.parse_args()
 
+MAVLINK2REST_URL = "http://192.168.2.2:4777"
+
+def set_param(param_name, param_type, param_value):
+    """
+    Sets parameter "param_name" of type param_type to value "value" in the autopilot
+    Returns True if succesful, False otherwise
+    """
+    try:
+        data = requests.get(MAVLINK2REST_URL + '/helper/message/PARAM_SET').json()
+
+        for i, char in enumerate(param_name):
+            data["message"]["param_id"][i] = char
+
+        data["message"]["param_type"] = {"type": param_type}
+        data["message"]["param_value"] = param_value
+
+        result = requests.post(MAVLINK2REST_URL + '/mavlink', json=data)
+        return result.status_code == 200
+    except Exception as error:
+        print("Error setting parameter: " + str(error))
+        return False
+
+
 def main():
     """ Main function
     """
 
     if not is_compatible_ardusub_version():
         exit(-1)
+
+    ## Set RNGFND1_TYPE to MavLink
+    ## This file will only run if ping1d is detected, so we don't need to check for its presence again
+    if not set_param("RNGFND1_TYPE", "MAV_PARAM_TYPE_UINT8", 10):
+        print("Failed to set RNGFND_TYPE to MavLink!")
+
     ## The time that this script was started
     tboot = time.time()
 
